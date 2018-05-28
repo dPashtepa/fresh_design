@@ -23,12 +23,25 @@ var app = angular.module('myApp', ['ngAutocomplete', 'ngRoute'])
 })
 
 .controller('firstCtrl', ['$scope', 'myService', function ($scope, myService) {
-    myService.checkPrefill() ? $scope.form = myService.getData(): myService.getTransactions().then(function(data){
-        $scope.form = data;
-    })
-    
-    // $scope.form = myService.getData();
-    console.log($scope.form);
+    if(myService.checkPrefill()){
+        $scope.form = myService.getData();
+        $scope.filledForm = function(){
+            var len = Object.keys($scope.form).length;
+            return len !== 6;
+        }
+    } else {
+        myService.getTransactions()
+            .then(function(data){
+                $scope.form = data;
+            })
+            .then(function(){
+                $scope.filledForm = function(){
+                    var len = Object.keys($scope.form).length;
+                    return len !== 6;
+                }
+            })
+    }
+
 
     $scope.check = function(obj) {
         return Object.keys(obj).length
@@ -38,10 +51,7 @@ var app = angular.module('myApp', ['ngAutocomplete', 'ngRoute'])
         myService.setData($scope.form);
     }
 
-    $scope.filledForm = function(){
-        var len = Object.keys($scope.form).length;
-        return len == 6 ? false: true;
-    }
+
 
 
 }])
@@ -61,7 +71,7 @@ var app = angular.module('myApp', ['ngAutocomplete', 'ngRoute'])
             startDate = new Date(1900, 0, 0);
         startDate.setDate(startDate.getDate()+five);
         var yearsApart = new Date(new Date - startDate).getFullYear()-1970;
-        return yearsApart >= 21 ? true: false;
+        return yearsApart >= 21;
     }
 
     $scope.result = '';
@@ -76,9 +86,24 @@ var app = angular.module('myApp', ['ngAutocomplete', 'ngRoute'])
 
 .controller('thirdCtrl', ['$scope', 'myService', '$http', function ($scope, myService, $http) {
 
-    myService.checkPrefill() ? $scope.form = myService.getData(): myService.getTransactions().then(function(data){
-        $scope.form = data;
-    })
+    if(myService.checkPrefill()){
+        $scope.form = myService.getData();
+        $scope.checkResults = function(obj) {
+            return Object.keys(obj).length < 5;
+        }
+        if($scope.checkResults($scope.form)) window.location.href = '#/stepOne';
+    } else {
+        myService.getTransactions()
+            .then(function(data){
+                $scope.form = data;
+            })
+            .then(function(){
+                $scope.checkResults = function(obj) {
+                    return Object.keys(obj).length < 5;
+                }
+        if($scope.checkResults($scope.form)) window.location.href = '#/stepOne';
+        })
+    }
 
     $scope.submitForm = function () {
             var data = $scope.form;
@@ -94,7 +119,7 @@ var app = angular.module('myApp', ['ngAutocomplete', 'ngRoute'])
                 alert('Форма отправленна!');
             })
             .error(function (data, status, header, config) {
-                alert('Форма не отправленна:' + status);
+                alert('Форма не отправленна: ' + status);
             });
         
     };
@@ -122,7 +147,7 @@ var app = angular.module('myApp', ['ngAutocomplete', 'ngRoute'])
         },
         getTransactions: function(){
            //is a request needed?
-           return $http.get("form.json").then(function(result){
+           return $http.get("form_new.json").then(function(result){
                formData = result.data;
                preFilled = true;
                return formData;
